@@ -23,15 +23,18 @@ export class QueryBuilder {
     return new SelectQueryBuilder(selectCols, this.db);
   }
 
-  insertInto(table: string) {
-    return new InsertBuilder(table, this.db);
+  insertInto(tables: string[]) {
+    const intoTables = Array.isArray(tables) ? tables : [tables];
+    return new InsertBuilder(intoTables, this.db);
   }
 
-  deleteFrom(fromTable: string) {
+  deleteFrom(tables: string[]) {
+    const fromTable = Array.isArray(tables) ? tables : [tables];
     return new DeleteBuilder(fromTable, this.db);
   }
 
-  updateTable(table: string) {
-    return new UpdateBuilder(table, this.db);
+  updateTable(tables: string[]) {
+    const updateTables = Array.isArray(tables) ? tables : [tables];
+    return new UpdateBuilder(updateTables, this.db);
   }
 }

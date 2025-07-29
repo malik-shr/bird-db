@@ -4,7 +4,7 @@ import type { SQLBuildResult } from '../utils/types';
 export abstract class QueryExecuter<T = unknown> {
   constructor(private db: Database) {}
 
-  protected abstract buildQuery(): SQLBuildResult;
+  protected abstract build(): SQLBuildResult;
 
   private asClass?: new (...args: any[]) => T;
 
@@ -14,19 +14,19 @@ export abstract class QueryExecuter<T = unknown> {
   }
 
   get(): T | undefined {
-    const { sql, params } = this.buildQuery();
+    const { sql, params } = this.build();
     const result = this.db.query(sql).get(params);
     return this.map(result);
   }
 
   all(): T[] {
-    const { sql, params } = this.buildQuery();
+    const { sql, params } = this.build();
     const results = this.db.query(sql).all(params);
     return results.map((r) => this.map(r));
   }
 
   run() {
-    const { sql, params } = this.buildQuery();
+    const { sql, params } = this.build();
     return this.db.query(sql).run(params);
   }
 

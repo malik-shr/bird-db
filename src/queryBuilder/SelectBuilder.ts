@@ -1,28 +1,26 @@
 import type {
+  JoinCondition,
+  OrderCondition,
+  OrderDirection,
   SQLBuildResult,
-  SQLOperator,
-  SQLParams,
-  SQLValue,
 } from '../utils/types';
-import { WhereClause } from './WhereClause';
+import { WhereClause, type InputCondition } from './WhereClause';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
+import { ParameterContext } from '../utils/ParamContext';
 
 export class SelectQueryBuilder extends QueryExecuter {
   private selectFields: string[] = [];
   private fromTable: string[] = [];
-  private whereConditions: WhereClause | null = null;
+  private whereClauses: WhereClause[] = [];
+  private paramContext: ParameterContext;
+  private joinConditions: JoinCondition[] = [];
+  private orderConditions: OrderCondition[] = [];
 
   constructor(selectFields: string[], db: Database) {
     super(db);
     this.selectFields = selectFields;
-  }
-
-  reset(): this {
-    this.selectFields = [];
-    this.fromTable = [];
-    this.whereConditions = null;
-    return this;
+    this.paramContext = new ParameterContext();
   }
 
   select(fields: string | string[]): this {
@@ -36,33 +34,53 @@ export class SelectQueryBuilder extends QueryExecuter {
   }
 
   // Main where method - accepts a WhereClause or callback function
-  where(condition: WhereClause): this;
-  where(field: string, operator: SQLOperator, value: SQLValue): this;
-  where(callback: (whereClause: WhereClause) => void): this;
-  where(
-    conditionOrField:
-      | WhereClause
-      | string
-      | ((whereClause: WhereClause) => void),
-    operator?: SQLOperator,
-    value?: SQLValue
-  ): this {
-    if (typeof conditionOrField === 'function') {
-      const whereClause = new WhereClause();
-      conditionOrField(whereClause);
-      this.whereConditions = whereClause;
-    } else if (conditionOrField instanceof WhereClause) {
-      this.whereConditions = conditionOrField;
-    } else if (typeof conditionOrField === 'string' && operator !== undefined) {
-      // Simple condition: where('name', '=', 'John')
-      const whereClause = new WhereClause();
-      whereClause.condition(conditionOrField, operator, value!);
-      this.whereConditions = whereClause;
-    }
+  where(...conditions: readonly InputCondition[]) {
+    const whereClause = new WhereClause(conditions, this.paramContext);
+    this.whereClauses.push(whereClause);
+
     return this;
   }
 
-  protected buildQuery(): SQLBuildResult {
+  join(table: string, c1: string, c2: string) {
+    this.joinConditions.push({ table, c1, c2, operator: 'JOIN' });
+
+    return this;
+  }
+
+  innerJoin(table: string, c1: string, c2: string) {
+    this.joinConditions.push({ table, c1, c2, operator: 'INNER JOIN' });
+
+    return this;
+  }
+
+  leftJoin(table: string, c1: string, c2: string) {
+    this.joinConditions.push({ table, c1, c2, operator: 'LEFT JOIN' });
+
+    return this;
+  }
+
+  rightJoin(table: string, c1: string, c2: string) {
+    this.joinConditions.push({ table, c1, c2, operator: 'RIGHT JOIN' });
+
+    return this;
+  }
+
+  fullJoin(table: string, c1: string, c2: string) {
+    this.joinConditions.push({ table, c1, c2, operator: 'FULL JOIN' });
+
+    return this;
+  }
+
+  orderBy(column: string, orderDirection: OrderDirection = 'DESC') {
+    this.orderConditions = [
+      ...this.orderConditions,
+      { column: column, direction: orderDirection },
+    ];
+
+    return this;
+  }
+
+  protected build(): SQLBuildResult {
     if (this.selectFields.length === 0) {
       throw new Error('SELECT fields are required');
     }
@@ -74,20 +92,35 @@ export class SelectQueryBuilder extends QueryExecuter {
     let sql = `SELECT ${this.selectFields.join(
       ', '
     )} FROM ${this.fromTable.join(', ')}`;
-    let params: SQLParams = {};
 
-    if (this.whereConditions) {
-      const whereResult = this.whereConditions.toSQL();
-      if (whereResult.sql.trim()) {
-        sql += ` WHERE ${whereResult.sql}`;
-        params = whereResult.params;
-      }
+    if (this.joinConditions.length > 0) {
+      const joinConditions = this.joinConditions.map((joinCondition) => {
+        return `${joinCondition.operator} ${joinCondition.table} ON ${joinCondition.c1} = ${joinCondition.c2}`;
+      });
+      sql += ` ${joinConditions.join(' ')}`;
     }
 
-    return { sql, params };
+    if (this.whereClauses.length > 0) {
+      const whereClauses = this.whereClauses.map((whereClause) => {
+        const build = whereClause.build();
+        return build.sql;
+      });
+
+      sql += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+
+    if (this.orderConditions.length > 0) {
+      const orderConditions = this.orderConditions.map((orderCondition) => {
+        return `${orderCondition.column} ${orderCondition.direction}`;
+      });
+
+      sql += ` ORDER BY ${orderConditions.join(', ')}`;
+    }
+
+    return { sql, params: this.paramContext.getParameters() };
   }
 
   sql() {
-    return this.buildQuery().sql;
+    return this.build().sql;
   }
 }

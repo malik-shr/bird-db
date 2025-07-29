@@ -1,23 +1,23 @@
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
-import type { SQLBuildResult, SQLParams, SQLValues } from '../utils/types';
+import type { SQLBuildResult, SQLParams } from '../utils/types';
 import { Database } from 'bun:sqlite';
 
 export class InsertBuilder extends QueryExecuter {
-  private table: string;
-  private sqlValues: SQLValues = {};
+  private tables: string[];
+  private sqlValues: SQLParams = {};
 
-  constructor(table: string, db: Database) {
+  constructor(tables: string[], db: Database) {
     super(db);
-    this.table = table;
+    this.tables = tables;
   }
 
-  values(sqlValues: SQLValues) {
+  values(sqlValues: SQLParams) {
     this.sqlValues = sqlValues;
 
     return this;
   }
 
-  protected buildQuery(): SQLBuildResult {
+  protected build(): SQLBuildResult {
     let paramIndex = 0;
     const params: SQLParams = {};
 
@@ -36,7 +36,7 @@ export class InsertBuilder extends QueryExecuter {
     }
 
     return {
-      sql: `INSERT INTO ${this.table} (${columns.join(
+      sql: `INSERT INTO ${this.tables.join(', ')} (${columns.join(
         ','
       )}) VALUES (${Object.keys(params).join(',')})`,
       params: params,
@@ -44,6 +44,6 @@ export class InsertBuilder extends QueryExecuter {
   }
 
   sql() {
-    return this.buildQuery().sql;
+    return this.build().sql;
   }
 }
