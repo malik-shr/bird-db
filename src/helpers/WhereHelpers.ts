@@ -3,7 +3,7 @@ import type {
   InputCondition,
   ReferenceCondition,
 } from '../queryBuilder/WhereClause';
-import type { ComparisonOperator } from './types';
+import type { ComparisonOperator } from '../utils/types';
 
 type RefConditions = [string, ComparisonOperator, string];
 
