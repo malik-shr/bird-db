@@ -1,16 +1,14 @@
+import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import type { SQLBuildResult, SQLParams, SQLValues } from '../utils/types';
 import { Database } from 'bun:sqlite';
 
-export class InsertBuilder {
+export class InsertBuilder extends QueryExecuter {
   private table: string;
   private sqlValues: SQLValues = {};
 
-  private asClass: any;
-  private db: Database;
-
   constructor(table: string, db: Database) {
+    super(db);
     this.table = table;
-    this.db = db;
   }
 
   values(sqlValues: SQLValues) {
@@ -19,8 +17,8 @@ export class InsertBuilder {
     return this;
   }
 
-  toSQL(startingIndex = 0): SQLBuildResult {
-    let paramIndex = startingIndex;
+  protected buildQuery(): SQLBuildResult {
+    let paramIndex = 0;
     const params: SQLParams = {};
 
     const columns = [];
@@ -45,56 +43,7 @@ export class InsertBuilder {
     };
   }
 
-  toString() {
-    return this.toSQL().sql;
-  }
-
-  as(asClass: any) {
-    this.asClass = asClass;
-    return this;
-  }
-
-  get() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    const result = query.get(params);
-
-    return result;
-  }
-
-  all() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.all(params);
-  }
-
-  run() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.run(params);
+  sql() {
+    return this.buildQuery().sql;
   }
 }

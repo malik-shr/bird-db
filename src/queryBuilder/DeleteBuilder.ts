@@ -4,18 +4,17 @@ import type {
   SQLParams,
   SQLValue,
 } from '../utils/types';
-import { WhereClause } from '../helpers/WhereClause';
+import { WhereClause } from './WhereClause';
 import { Database } from 'bun:sqlite';
+import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 
-export class DeleteBuilder {
+export class DeleteBuilder extends QueryExecuter {
   private fromTable: string = '';
   private whereConditions: WhereClause | null = null;
-  private asClass: any;
-  private db: Database;
 
   constructor(fromTable: string, db: Database) {
+    super(db);
     this.fromTable = fromTable;
-    this.db = db;
   }
 
   where(condition: WhereClause): this;
@@ -44,7 +43,7 @@ export class DeleteBuilder {
     return this;
   }
 
-  toSQL(): SQLBuildResult {
+  protected buildQuery(): SQLBuildResult {
     if (this.fromTable.length === 0) {
       throw new Error('FROM table is required');
     }
@@ -63,56 +62,7 @@ export class DeleteBuilder {
     return { sql, params };
   }
 
-  toString() {
-    return this.toSQL().sql;
-  }
-
-  as(asClass: any) {
-    this.asClass = asClass;
-    return this;
-  }
-
-  get() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    const result = query.get(params);
-
-    return result;
-  }
-
-  all() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.all(params);
-  }
-
-  run() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.run(params);
+  sql() {
+    return this.buildQuery().sql;
   }
 }

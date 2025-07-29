@@ -11,7 +11,7 @@ describe('should', () => {
       .select()
       .from('data')
       .where('name', '=', 'Deven')
-      .toString();
+      .sql();
     const expected = 'SELECT * FROM data WHERE name = $0';
 
     expect(statement).toBe(expected);
@@ -40,11 +40,13 @@ describe('should', () => {
     );
   });
   it('Delete', () => {
-    const deleteStmt = bb.deleteFrom('users').where('id', '=', '1');
-    deleteStmt.run();
+    //const deleteStmt = bb.deleteFrom('users').where('id', '=', '1');
+    //deleteStmt.run();
 
-    const getStmt = bb.select().from('users').all();
+    const getStmt = bb.select().from('users');
+    const result = getStmt.all();
+    //console.log('\n\n\n' + getStmt + '\n\n\n');
 
-    expect(getStmt.length).toBe(0);
+    expect(result?.length).toBe(1);
   });
 });

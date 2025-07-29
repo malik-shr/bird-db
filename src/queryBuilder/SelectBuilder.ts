@@ -4,20 +4,18 @@ import type {
   SQLParams,
   SQLValue,
 } from '../utils/types';
-import { WhereClause } from '../helpers/WhereClause';
+import { WhereClause } from './WhereClause';
 import { Database } from 'bun:sqlite';
+import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 
-export class SelectQueryBuilder {
+export class SelectQueryBuilder extends QueryExecuter {
   private selectFields: string[] = [];
   private fromTable: string[] = [];
   private whereConditions: WhereClause | null = null;
 
-  private asClass: any;
-  private db: Database;
-
   constructor(selectFields: string[], db: Database) {
+    super(db);
     this.selectFields = selectFields;
-    this.db = db;
   }
 
   reset(): this {
@@ -64,7 +62,7 @@ export class SelectQueryBuilder {
     return this;
   }
 
-  toSQL(): SQLBuildResult {
+  protected buildQuery(): SQLBuildResult {
     if (this.selectFields.length === 0) {
       throw new Error('SELECT fields are required');
     }
@@ -89,56 +87,7 @@ export class SelectQueryBuilder {
     return { sql, params };
   }
 
-  toString() {
-    return this.toSQL().sql;
-  }
-
-  as(asClass: any) {
-    this.asClass = asClass;
-    return this;
-  }
-
-  get() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    const result = query.get(params);
-
-    return result;
-  }
-
-  all() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.all(params);
-  }
-
-  run() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.run(params);
+  sql() {
+    return this.buildQuery().sql;
   }
 }

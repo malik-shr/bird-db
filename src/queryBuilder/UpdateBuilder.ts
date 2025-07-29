@@ -5,20 +5,18 @@ import type {
   SQLValue,
   SQLValues,
 } from '../utils/types';
-import { WhereClause } from '../helpers/WhereClause';
+import { WhereClause } from './WhereClause';
 import { Database } from 'bun:sqlite';
+import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 
-export class UpdateBuilder {
+export class UpdateBuilder extends QueryExecuter {
   private table: string = '';
   private whereConditions: WhereClause | null = null;
   private sqlValues: SQLValues = {};
 
-  private asClass: any;
-  private db: Database;
-
   constructor(table: string, db: Database) {
+    super(db);
     this.table = table;
-    this.db = db;
   }
 
   set(sqlValues: SQLValues) {
@@ -51,14 +49,14 @@ export class UpdateBuilder {
     return this;
   }
 
-  toSQL(startingIndex = 0): SQLBuildResult {
+  protected buildQuery(): SQLBuildResult {
     if (this.table.length === 0) {
       throw new Error('FROM table is required');
     }
 
     let params: SQLParams = {};
 
-    let paramIndex = startingIndex;
+    let paramIndex = 0;
 
     const setValues: string[] = [];
 
@@ -83,56 +81,7 @@ export class UpdateBuilder {
     return { sql, params };
   }
 
-  toString() {
-    return this.toSQL().sql;
-  }
-
-  as(asClass: any) {
-    this.asClass = asClass;
-    return this;
-  }
-
-  get() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    const result = query.get(params);
-
-    return result;
-  }
-
-  all() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql).as(this.asClass);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.all(params);
-  }
-
-  run() {
-    const { params, sql } = this.toSQL();
-
-    let query;
-
-    if (this.asClass) {
-      query = this.db.query(sql);
-    } else {
-      query = this.db.query(sql);
-    }
-
-    return query.run(params);
+  sql() {
+    return this.buildQuery().sql;
   }
 }

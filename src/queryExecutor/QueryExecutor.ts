@@ -1,29 +1,36 @@
 import { Database } from 'bun:sqlite';
-import type { SQLParams } from '../utils/types';
+import type { SQLBuildResult } from '../utils/types';
 
-export class QueryExecuter {
-  sql: string;
-  params: SQLParams;
-  db: Database;
+export abstract class QueryExecuter<T = unknown> {
+  constructor(private db: Database) {}
 
-  constructor(sql: string, params: SQLParams = {}, db: Database) {
-    this.sql = sql;
-    this.params = params;
-    this.db = db;
+  protected abstract buildQuery(): SQLBuildResult;
+
+  private asClass?: new (...args: any[]) => T;
+
+  as(asClass: new (...args: any[]) => T): this {
+    this.asClass = asClass;
+    return this;
   }
 
-  get() {
-    const query = this.db.query(this.sql);
-    return query.get(this.params);
+  get(): T | undefined {
+    const { sql, params } = this.buildQuery();
+    const result = this.db.query(sql).get(params);
+    return this.map(result);
   }
 
-  all() {
-    const query = this.db.query(this.sql);
-    return query.all(this.params);
+  all(): T[] {
+    const { sql, params } = this.buildQuery();
+    const results = this.db.query(sql).all(params);
+    return results.map((r) => this.map(r));
   }
 
   run() {
-    const query = this.db.query(this.sql);
-    return query.run(this.params);
+    const { sql, params } = this.buildQuery();
+    return this.db.query(sql).run(params);
+  }
+
+  private map(row: any): T {
+    return this.asClass ? new this.asClass(row) : row;
   }
 }
