@@ -30,7 +30,7 @@ export class QueryBuilder {
     return new UpdateStatement(table, this.db);
   }
 
-  raw(statement: string, params: SQLParams) {
+  raw(statement: string, params: SQLParams = {}) {
     return new RawStatement(statement, params, this.db);
   }
 }

@@ -7,6 +7,7 @@ import type {
   SQLParams,
   SQLValue,
 } from '../utils/types';
+import { quoteColumn } from './utils';
 
 // Operator types
 type ListValue = readonly SQLValue[];
@@ -206,9 +207,9 @@ export class WhereClause {
 
       return {
         type: 'REFERENCE',
-        field,
+        field: quoteColumn(field),
         operator,
-        refColumn: columnRef.column,
+        refColumn: quoteColumn(columnRef.column),
       };
     }
 
@@ -221,13 +222,13 @@ export class WhereClause {
       if (this.isNullOperator(operator)) {
         return {
           type: 'SIMPLE',
-          field,
+          field: quoteColumn(field),
           operator,
         } as const;
       } else {
         return {
           type: 'SIMPLE',
-          field,
+          field: quoteColumn(field),
           operator,
           value: condition[2],
         } as const;

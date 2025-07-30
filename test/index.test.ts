@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'bun:test';
-import { QueryBuilder } from '../src';
+import { QueryBuilder, ref } from '../src';
 import { Database } from 'bun:sqlite';
+import { quoteColumn } from '../src/helpers/utils';
 
 describe('should', () => {
   const db = new Database(':memory:');
@@ -10,35 +11,38 @@ describe('should', () => {
     const statement = bb
       .select()
       .from('data')
-      .where(['name', '=', 'Deven'])
+      .where(['name', '=', ref('data.name')])
       .sql();
-    const expected = 'SELECT * FROM "data" WHERE (name = $0)';
+    const expected = 'SELECT * FROM "data" WHERE ("name" = "data"."name")';
 
     expect(statement).toBe(expected);
   });
+  it('Function Calls', () => {
+    const count = quoteColumn('COUNT(users.id) AS user_count');
+    expect(count).toBe('COUNT("users"."id") AS "user_count"');
+  });
 
   it('Insert and Select', () => {
-    const query = db.query(
+    bb.raw(
       'CREATE TABLE users(id TEXT PRIMARY KEY NOT NULL, username TEXT UNIQUE NOT NULL, email TEXT NOT NULL)'
-    );
-    query.run();
+    ).run();
+
+    class User {
+      id!: string;
+      username!: string;
+      email!: string;
+    }
 
     const stmt1 = bb
       .insertInto('users')
-      .values({ id: '1', username: 'bird', email: 'bird@gmail.com' });
+      .values({ id: '1', username: 'bird', email: 'bird@email.com' });
 
     stmt1.run();
 
-    const stmt2 = bb.select('id', 'username', 'email').from('users');
+    const stmt2 = bb.select('id', 'username', 'email').from('users').as(User);
     const result = stmt2.get();
 
-    expect(
-      Bun.deepEquals(
-        result,
-        { id: '1', username: 'bird', email: 'bird@gmail.com' },
-        true
-      )
-    );
+    expect(result.id).toBe('1');
   });
   it('Delete', () => {
     const deleteStmt = bb.deleteFrom('users').where(['id', '=', '1']);
