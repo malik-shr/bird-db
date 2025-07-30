@@ -19,6 +19,8 @@ export class UpdateStatement extends QueryExecuter {
 
   set(sqlValues: SQLParams) {
     this.sqlValues = sqlValues;
+
+    return this;
   }
 
   where(...conditions: readonly InputCondition[]) {

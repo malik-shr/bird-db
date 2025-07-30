@@ -13,21 +13,37 @@ export abstract class QueryExecuter<T = unknown> {
     return this;
   }
 
-  get(): T | undefined {
+  get() {
     const { sql, params } = this.build();
-    const result = this.db.query(sql).get(params);
-    return this.map(result);
+    let query = this.db.query(sql);
+
+    if (this.asClass) {
+      query = this.db.query(sql).as(this.asClass);
+    }
+
+    return query.get(params);
   }
 
-  all(): T[] {
+  all() {
     const { sql, params } = this.build();
-    const results = this.db.query(sql).all(params);
-    return results.map((r) => this.map(r));
+    let query = this.db.query(sql);
+
+    if (this.asClass) {
+      query = this.db.query(sql).as(this.asClass);
+    }
+
+    return query.all(params);
   }
 
   run() {
     const { sql, params } = this.build();
-    return this.db.query(sql).run(params);
+    let query = this.db.query(sql);
+
+    if (this.asClass) {
+      query = this.db.query(sql).as(this.asClass);
+    }
+
+    return query.run(params);
   }
 
   sql() {
@@ -40,9 +56,5 @@ export abstract class QueryExecuter<T = unknown> {
     const { params } = this.build();
 
     return params;
-  }
-
-  private map(row: any): T {
-    return this.asClass ? new this.asClass(row) : row;
   }
 }
