@@ -30,6 +30,18 @@ export abstract class QueryExecuter<T = unknown> {
     return this.db.query(sql).run(params);
   }
 
+  sql() {
+    const { sql } = this.build();
+
+    return sql;
+  }
+
+  params() {
+    const { params } = this.build();
+
+    return params;
+  }
+
   private map(row: any): T {
     return this.asClass ? new this.asClass(row) : row;
   }

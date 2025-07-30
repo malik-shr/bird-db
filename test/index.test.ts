@@ -10,9 +10,9 @@ describe('should', () => {
     const statement = bb
       .select()
       .from('data')
-      .where('name', '=', 'Deven')
+      .where(['name', '=', 'Deven'])
       .sql();
-    const expected = 'SELECT * FROM data WHERE name = $0';
+    const expected = 'SELECT * FROM "data" WHERE (name = $0)';
 
     expect(statement).toBe(expected);
   });
@@ -26,9 +26,10 @@ describe('should', () => {
     const stmt1 = bb
       .insertInto('users')
       .values({ id: '1', username: 'bird', email: 'bird@gmail.com' });
+
     stmt1.run();
 
-    const stmt2 = bb.select(['id', 'username', 'email']).from('users');
+    const stmt2 = bb.select('id', 'username', 'email').from('users');
     const result = stmt2.get();
 
     expect(
@@ -40,12 +41,11 @@ describe('should', () => {
     );
   });
   it('Delete', () => {
-    //const deleteStmt = bb.deleteFrom('users').where('id', '=', '1');
-    //deleteStmt.run();
+    const deleteStmt = bb.deleteFrom('users').where(['id', '=', '1']);
+    deleteStmt.run();
 
     const getStmt = bb.select().from('users');
     const result = getStmt.all();
-    //console.log('\n\n\n' + getStmt + '\n\n\n');
 
     expect(result?.length).toBe(1);
   });

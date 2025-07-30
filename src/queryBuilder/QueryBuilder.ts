@@ -1,8 +1,10 @@
 import { Database } from 'bun:sqlite';
-import { SelectQueryBuilder } from './SelectBuilder';
-import { InsertBuilder } from './InsertBuilder';
-import { DeleteBuilder } from './DeleteBuilder';
-import { UpdateBuilder } from './UpdateBuilder';
+import { SelectStatement } from './SelectStatement';
+import { InsertStatement } from './InsertStatement';
+import { DeleteStatement } from './DeleteStatement';
+import { UpdateStatement } from './UpdateStatement';
+import type { SQLParams } from '../utils/types';
+import { RawStatement } from './RawStatement';
 
 export class QueryBuilder {
   private db: Database;
@@ -11,30 +13,24 @@ export class QueryBuilder {
     this.db = db;
   }
 
-  select(columns: string | string[] = '*') {
-    let selectCols: string[] = [];
-
-    if (typeof columns === 'string') {
-      selectCols = columns === '*' ? ['*'] : [columns];
-    } else {
-      selectCols = columns;
-    }
-
-    return new SelectQueryBuilder(selectCols, this.db);
+  select(...columns: string[]) {
+    const selectCols = columns.length === 0 ? ['*'] : columns;
+    return new SelectStatement(selectCols, this.db);
   }
 
-  insertInto(tables: string[]) {
-    const intoTables = Array.isArray(tables) ? tables : [tables];
-    return new InsertBuilder(intoTables, this.db);
+  insertInto(table: string) {
+    return new InsertStatement(table, this.db);
   }
 
-  deleteFrom(tables: string[]) {
-    const fromTable = Array.isArray(tables) ? tables : [tables];
-    return new DeleteBuilder(fromTable, this.db);
+  deleteFrom(table: string) {
+    return new DeleteStatement(table, this.db);
   }
 
-  updateTable(tables: string[]) {
-    const updateTables = Array.isArray(tables) ? tables : [tables];
-    return new UpdateBuilder(updateTables, this.db);
+  updateTable(table: string) {
+    return new UpdateStatement(table, this.db);
+  }
+
+  raw(statement: string, params: SQLParams) {
+    return new RawStatement(statement, params, this.db);
   }
 }

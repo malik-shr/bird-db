@@ -1,17 +1,18 @@
 import type { SQLBuildResult, SQLParams } from '../utils/types';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
-import { WhereClause, type InputCondition } from './WhereClause';
+import { WhereClause, type InputCondition } from '../helpers/WhereClause';
 import { ParameterContext } from '../utils/ParamContext';
+import { quoteTable } from '../helpers/utils';
 
-export class DeleteBuilder extends QueryExecuter {
-  private fromTables: string[] = [];
+export class DeleteStatement extends QueryExecuter {
+  private fromTable: string;
   private whereClauses: WhereClause[] = [];
   private paramContext: ParameterContext;
 
-  constructor(fromTables: string[], db: Database) {
+  constructor(fromTable: string, db: Database) {
     super(db);
-    this.fromTables = fromTables;
+    this.fromTable = quoteTable(fromTable);
     this.paramContext = new ParameterContext();
   }
 
@@ -23,11 +24,11 @@ export class DeleteBuilder extends QueryExecuter {
   }
 
   protected build(): SQLBuildResult {
-    if (this.fromTables.length === 0) {
+    if (this.fromTable.length === 0) {
       throw new Error('FROM table is required');
     }
 
-    let sql = `DELETE FROM ${this.fromTables.join(', ')}`;
+    let sql = `DELETE FROM ${this.fromTable}`;
     let params: SQLParams = {};
 
     if (this.whereClauses.length > 0) {
@@ -40,9 +41,5 @@ export class DeleteBuilder extends QueryExecuter {
     }
 
     return { sql, params };
-  }
-
-  sql() {
-    return this.build().sql;
   }
 }

@@ -1,5 +1,5 @@
 import { QueryBuilder } from './queryBuilder/QueryBuilder';
-import { or, and, ref, whereRef } from './helpers/WhereHelpers';
+import { or, and, ref, whereRef, c } from './helpers/WhereHelpers';
 
 export { QueryBuilder };
-export { or, and, ref, whereRef };
+export { or, and, ref, whereRef, c };

@@ -1,18 +1,19 @@
-import type { SQLBuildResult, SQLParams } from '../utils/types';
+import type { JoinCondition, SQLBuildResult, SQLParams } from '../utils/types';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
-import { WhereClause, type InputCondition } from './WhereClause';
+import { WhereClause, type InputCondition } from '../helpers/WhereClause';
+import { quoteColumn, quoteTable } from '../helpers/utils';
 
-export class UpdateBuilder extends QueryExecuter {
-  private tables: string[] = [];
+export class UpdateStatement extends QueryExecuter {
+  private table: string;
   private whereClauses: WhereClause[] = [];
   private paramContext: ParameterContext;
   private sqlValues: SQLParams = {};
 
-  constructor(tables: string[], db: Database) {
+  constructor(table: string, db: Database) {
     super(db);
-    this.tables = tables;
+    this.table = quoteTable(table);
     this.paramContext = new ParameterContext();
   }
 
@@ -28,25 +29,16 @@ export class UpdateBuilder extends QueryExecuter {
   }
 
   protected build(): SQLBuildResult {
-    if (this.tables.length === 0) {
-      throw new Error('FROM table is required');
-    }
-
-    let params: SQLParams = {};
-
-    let paramIndex = 0;
+    const params = new ParameterContext();
 
     const setValues: string[] = [];
 
     for (const [column, value] of Object.entries(this.sqlValues)) {
-      const paramIndexStr = `$${paramIndex}`;
-
-      setValues.push(`${column} = ${paramIndexStr}`);
-      params[paramIndexStr] = value;
-      ++paramIndex;
+      const paramStr = params.addParameter(value);
+      setValues.push(`${quoteColumn(column)} = ${paramStr}`);
     }
 
-    let sql = `UPDATE ${this.tables.join(', ')} SET ${setValues.join(',')}`;
+    let sql = `UPDATE ${this.table} SET ${setValues.join(',')}`;
 
     if (this.whereClauses.length > 0) {
       const whereClauses = this.whereClauses.map((whereClause) => {
@@ -57,10 +49,6 @@ export class UpdateBuilder extends QueryExecuter {
       sql += ` WHERE ${whereClauses.join(' AND ')}`;
     }
 
-    return { sql, params };
-  }
-
-  sql() {
-    return this.build().sql;
+    return { sql, params: params.getParameters() };
   }
 }

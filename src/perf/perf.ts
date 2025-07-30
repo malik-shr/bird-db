@@ -7,9 +7,9 @@ function builderPerf() {
 
   for (let i = 0; i < 1_000_000; i++) {
     const query = builder
-      .select(['id', 'username'])
+      .select('id', 'username')
       .from('users')
-      .where('id', '=', i.toString());
+      .where(['id', '=', i.toString()]);
 
     const sql = query.sql(); // no actual DB involved
   }

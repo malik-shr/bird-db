@@ -4,14 +4,15 @@ import type {
   OrderDirection,
   SQLBuildResult,
 } from '../utils/types';
-import { WhereClause, type InputCondition } from './WhereClause';
+import { WhereClause, type InputCondition } from '../helpers/WhereClause';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
+import { quoteColumns, quoteTable } from '../helpers/utils';
 
-export class SelectQueryBuilder extends QueryExecuter {
+export class SelectStatement extends QueryExecuter {
   private selectFields: string[] = [];
-  private fromTable: string[] = [];
+  private fromTables: string[] = [];
   private whereClauses: WhereClause[] = [];
   private paramContext: ParameterContext;
   private joinConditions: JoinCondition[] = [];
@@ -19,17 +20,19 @@ export class SelectQueryBuilder extends QueryExecuter {
 
   constructor(selectFields: string[], db: Database) {
     super(db);
-    this.selectFields = selectFields;
+    this.selectFields = quoteColumns(selectFields);
     this.paramContext = new ParameterContext();
   }
 
-  select(fields: string | string[]): this {
-    this.selectFields = Array.isArray(fields) ? fields : [fields];
-    return this;
-  }
+  from(...tables: string[]): this {
+    if (tables.length === 0) {
+      throw Error('No fromTable provided');
+    }
 
-  from(tables: string | string[]): this {
-    this.fromTable = Array.isArray(tables) ? tables : [tables];
+    this.fromTables = tables.map((table) => {
+      return quoteTable(table);
+    });
+
     return this;
   }
 
@@ -85,13 +88,13 @@ export class SelectQueryBuilder extends QueryExecuter {
       throw new Error('SELECT fields are required');
     }
 
-    if (this.fromTable.length === 0) {
+    if (this.fromTables.length === 0) {
       throw new Error('FROM table is required');
     }
 
     let sql = `SELECT ${this.selectFields.join(
       ', '
-    )} FROM ${this.fromTable.join(', ')}`;
+    )} FROM ${this.fromTables.join(', ')}`;
 
     if (this.joinConditions.length > 0) {
       const joinConditions = this.joinConditions.map((joinCondition) => {
@@ -118,9 +121,5 @@ export class SelectQueryBuilder extends QueryExecuter {
     }
 
     return { sql, params: this.paramContext.getParameters() };
-  }
-
-  sql() {
-    return this.build().sql;
   }
 }

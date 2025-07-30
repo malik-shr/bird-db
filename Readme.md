@@ -45,9 +45,9 @@ const qb = new QueryBuilder(db);
 ### TypeScript
 
 ```ts
-qb.select(['users.id', 'users.username', 'users.email'])
+qb.select('users.id', 'users.username', 'users.email')
   .from('users')
-  .where('users.id', '=', 'ew31tsdgsda');
+  .where(['users.id', '=', 'ew31tsdgsda']);
 ```
 
 ### SQL
@@ -93,7 +93,7 @@ VALUES ($0, $1, $2)
 ```ts
 qb.updateTable('users')
   .set({ email: 'web@mail.de' })
-  .where('users.id', '=', 'afsdtfs-wetwas-fadf');
+  .where(['users.id', '=', 'afsdtfs-wetwas-fadf']);
 ```
 
 ### SQL
@@ -111,7 +111,7 @@ WHERE users.id = $1
 ### TypeScript
 
 ```ts
-qb.deleteFrom('users').where('id', '=', 'afsdtfs-wetwas-fadf');
+qb.deleteFrom('users').where(['id', '=', 'afsdtfs-wetwas-fadf']);
 ```
 
 ### SQL
