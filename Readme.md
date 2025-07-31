@@ -127,7 +127,7 @@ WHERE id = $0
 
 ```ts
 const query = qb
-  .select(['users.id', 'users.username', 'users.email'])
+  .select('users.id', 'users.username', 'users.email')
   .from('users')
   .where('users.id', '=', 'ew31tsdgsda');
 

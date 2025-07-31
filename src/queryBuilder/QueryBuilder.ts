@@ -5,6 +5,7 @@ import { DeleteStatement } from './DeleteStatement';
 import { UpdateStatement } from './UpdateStatement';
 import type { SQLParams } from '../utils/types';
 import { RawStatement } from './RawStatement';
+import type { SelectField } from '../helpers/sqlFunctions';
 
 export class QueryBuilder {
   private db: Database;
@@ -13,7 +14,7 @@ export class QueryBuilder {
     this.db = db;
   }
 
-  select(...columns: string[]) {
+  select(...columns: SelectField[]) {
     const selectCols = columns.length === 0 ? ['*'] : columns;
     return new SelectStatement(selectCols, this.db);
   }

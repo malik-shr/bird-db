@@ -26,46 +26,6 @@ export function quoteColumns(expressions: string[]): string[] {
 export function quoteColumn(expression: string): string {
   if (expression === '*') return '*';
 
-  // Check if it's a function call
-  const functionRegex =
-    /^\s*([A-Z_][A-Z0-9_]*)\s*\(\s*(.*?)\s*\)(?:\s+(?:AS\s+)?([a-zA-Z_][\w$]*))?\s*$/i;
-  const functionMatch = expression.match(functionRegex);
-
-  if (functionMatch) {
-    const [, functionName, args, alias] = functionMatch;
-
-    // Process function arguments
-    let processedArgs = '';
-    if (!args) {
-      return '';
-    }
-    if (args.trim()) {
-      if (args.trim() === '*') {
-        processedArgs = '*';
-      } else {
-        // Split arguments by comma, but be careful with nested functions
-        const argList = parseArguments(args);
-        processedArgs = argList
-          .map((arg) => {
-            const trimmedArg = arg.trim();
-            if (trimmedArg === '*') {
-              return '*';
-            }
-            // Recursively process each argument (could be another function or column)
-            return quoteColumn(trimmedArg);
-          })
-          .join(', ');
-      }
-    }
-
-    const quotedAlias = alias ? ` AS ${quoteIdentifier(alias)}` : '';
-
-    if (functionName) {
-      return `${functionName.toUpperCase()}(${processedArgs})${quotedAlias}`;
-    }
-  }
-
-  // Original column parsing logic
   const regex =
     /^\s*([a-zA-Z_][\w$]*)(?:\.([a-zA-Z_][\w$]*))?(?:\.([a-zA-Z_][\w$]*))?(?:\s+(?:AS\s+)?([a-zA-Z_][\w$]*))?\s*$/i;
   const match = expression.match(regex);
@@ -101,54 +61,6 @@ export function quoteColumn(expression: string): string {
   const quotedAlias = alias ? ` AS ${quoteIdentifier(alias)}` : '';
 
   return `${qualified}${quotedAlias}`;
-}
-
-// Helper function to parse function arguments, handling nested parentheses
-function parseArguments(args: string): string[] {
-  if (!args.trim()) return [];
-
-  const result: string[] = [];
-  let current = '';
-  let depth = 0;
-  let inQuotes = false;
-  let quoteChar = '';
-
-  for (let i = 0; i < args.length; i++) {
-    const char = args[i];
-
-    if (!inQuotes && (char === '"' || char === "'")) {
-      inQuotes = true;
-      quoteChar = char;
-      current += char;
-    } else if (inQuotes && char === quoteChar) {
-      // Check if it's an escaped quote
-      if (args[i + 1] === quoteChar) {
-        current += char + char;
-        i++; // Skip the next character
-      } else {
-        inQuotes = false;
-        quoteChar = '';
-        current += char;
-      }
-    } else if (!inQuotes && char === '(') {
-      depth++;
-      current += char;
-    } else if (!inQuotes && char === ')') {
-      depth--;
-      current += char;
-    } else if (!inQuotes && char === ',' && depth === 0) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-
-  if (current.trim()) {
-    result.push(current.trim());
-  }
-
-  return result;
 }
 
 export function quoteTable(input: string): string {

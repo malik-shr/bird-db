@@ -8,19 +8,30 @@ import { WhereClause, type InputCondition } from '../helpers/WhereClause';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
-import { quoteColumns, quoteTable } from '../helpers/utils';
+import { quoteColumn, quoteTable } from '../helpers/utils';
+import type { SelectField } from '../helpers/sqlFunctions';
 
 export class SelectStatement extends QueryExecuter {
-  private selectFields: string[] = [];
+  private selectFields: SelectField[] = [];
   private fromTables: string[] = [];
   private whereClauses: WhereClause[] = [];
   private paramContext: ParameterContext;
   private joinConditions: JoinCondition[] = [];
   private orderConditions: OrderCondition[] = [];
 
-  constructor(selectFields: string[], db: Database) {
+  constructor(selectFields: SelectField[], db: Database) {
     super(db);
-    this.selectFields = quoteColumns(selectFields);
+    this.selectFields = selectFields.map((selectField) => {
+      if (typeof selectField === 'string') {
+        return quoteColumn(selectField);
+      } else if (selectField.type !== null) {
+        if (selectField.type === 'function') {
+          return selectField.sql;
+        }
+      }
+      throw Error('Invalid field format');
+    });
+
     this.paramContext = new ParameterContext();
   }
 
@@ -36,7 +47,7 @@ export class SelectStatement extends QueryExecuter {
     return this;
   }
 
-  // Main where method - accepts a WhereClause or callback function
+  /** function that accepts where clause */
   where(...conditions: readonly InputCondition[]) {
     const whereClause = new WhereClause(conditions, this.paramContext);
     this.whereClauses.push(whereClause);

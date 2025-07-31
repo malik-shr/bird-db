@@ -2,6 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import { QueryBuilder, ref } from '../src';
 import { Database } from 'bun:sqlite';
 import { quoteColumn } from '../src/helpers/utils';
+import { MAX } from '../src/helpers/sqlFunctions';
 
 describe('should', () => {
   const db = new Database(':memory:');
@@ -9,19 +10,15 @@ describe('should', () => {
 
   it('Select', () => {
     const statement = bb
-      .select()
+      .select(MAX('id').as('YEAH'))
       .from('data')
       .where(['name', '=', ref('data.name')])
       .sql();
-    const expected = 'SELECT * FROM "data" WHERE ("name" = "data"."name")';
+    const expected =
+      'SELECT MAX("id") AS "YEAH" FROM "data" WHERE ("name" = "data"."name")';
 
     expect(statement).toBe(expected);
   });
-  it('Function Calls', () => {
-    const count = quoteColumn('COUNT(users.id) AS user_count');
-    expect(count).toBe('COUNT("users"."id") AS "user_count"');
-  });
-
   it('Insert and Select', () => {
     bb.raw(
       'CREATE TABLE users(id TEXT PRIMARY KEY NOT NULL, username TEXT UNIQUE NOT NULL, email TEXT NOT NULL)'
