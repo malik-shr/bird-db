@@ -10,9 +10,13 @@ export abstract class QueryExecuter<
 > {
   protected abstract build(): SQLBuildResult;
 
+  db: Database;
+
   private castClass?: new (...args: any[]) => any;
 
-  constructor(private db: Database) {}
+  constructor(db: Database) {
+    this.db = db;
+  }
 
   // Type-safe as() method that returns a new typed instance
   castTo<U>(asClass: new (...args: any[]) => U): QueryExecuter<HasClass<U>> {

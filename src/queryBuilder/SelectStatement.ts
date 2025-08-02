@@ -10,7 +10,11 @@ import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
 import { quoteColumn, quoteTable } from '../utils/utils';
 import type { FunctionType } from '../utils/sqlFunctions';
-import { WhereClause, type InputCondition } from './WhereClause';
+import {
+  WhereClause,
+  type InputCondition,
+  type SubqueryCondition,
+} from './WhereClause';
 
 type SelectField = string | FunctionType<SelectStatement> | SelectStatement;
 
@@ -40,24 +44,29 @@ export class SelectStatement extends QueryExecuter {
       throw Error('No fromTable provided');
     }
 
-    this.fromTables = tables.map((table) => {
-      return quoteTable(table);
-    });
+    this.fromTables = tables;
 
     return this;
   }
 
   /** function that accepts where clause */
   where(...conditions: readonly InputCondition[]) {
-    const whereClause = new WhereClause(conditions, this.paramContext);
+    const whereConditions = conditions.map((condition) => {
+      if (Array.isArray(condition) && condition[0] instanceof SelectStatement) {
+        const newSelectField = this.clone(condition[0]);
+        return [
+          newSelectField,
+          condition[1],
+          condition[2],
+        ] as SubqueryCondition;
+      }
+
+      return condition;
+    });
+
+    const whereClause = new WhereClause(whereConditions, this.paramContext);
     this.whereClauses.push(whereClause);
 
-    for (const condition of conditions) {
-      if (condition instanceof SelectStatement) {
-        //condition.build();
-        condition.params = this.params;
-      }
-    }
     return this;
   }
 
@@ -100,26 +109,37 @@ export class SelectStatement extends QueryExecuter {
     return this;
   }
 
-  setParamContext(ctx: ParameterContext): void {
-    this.paramContext = ctx;
-
-    // Propagate to where clauses
-    for (const whereClause of this.whereClauses) {
-      whereClause.paramContext = this.paramContext;
-      whereClause.build();
-
-      for (const condition of whereClause.conditions) {
-        if (condition instanceof SelectStatement) {
-          condition.setParamContext(this.paramContext);
-        }
-      }
-    }
-  }
-
   as(alias: string) {
     this.alias = alias;
 
     return this;
+  }
+
+  clone(statement: SelectStatement): SelectStatement {
+    const newSelectField = new SelectStatement(
+      // Clone the select fields to avoid sharing references
+      statement.selectFields.map((field) => {
+        if (field instanceof SelectStatement) {
+          return this.clone(field); // Recursively clone nested subqueries
+        }
+        return field;
+      }),
+      this.db,
+      this.paramContext
+    ).from(...statement.fromTables);
+
+    // Deep clone where clauses instead of sharing references
+    newSelectField.whereClauses = statement.whereClauses.map((clause) => {
+      // You might need to implement a clone method on WhereClause
+      // For now, create new WhereClause instances
+      return new WhereClause(clause.conditions, this.paramContext);
+    });
+
+    newSelectField.alias = statement.alias;
+    newSelectField.joinConditions = [...statement.joinConditions];
+    newSelectField.orderConditions = [...statement.orderConditions];
+
+    return newSelectField;
   }
 
   protected build(): SQLBuildResult {
@@ -131,9 +151,9 @@ export class SelectStatement extends QueryExecuter {
       if (typeof field === 'string') {
         return quoteColumn(field);
       } else if (field instanceof SelectStatement) {
-        field.setParamContext(this.paramContext);
-        const nested = field.build();
-        return `${nested.sql}`; // wrap subquery
+        const newSelectField = this.clone(field);
+
+        return `${newSelectField.sql()}`; // wrap subquery
       } else if (typeof field === 'object' && field.type === 'function') {
         return field.sql;
       }
@@ -141,13 +161,15 @@ export class SelectStatement extends QueryExecuter {
       throw new Error('Invalid select field');
     });
 
-    if (this.fromTables.length === 0) {
+    const quotedTables = this.fromTables.map((table) => {
+      return quoteTable(table);
+    });
+
+    if (quotedTables.length === 0) {
       throw new Error('FROM table is required');
     }
 
-    let sql = `SELECT ${fieldsSql.join(', ')} FROM ${this.fromTables.join(
-      ', '
-    )}`;
+    let sql = `SELECT ${fieldsSql.join(', ')} FROM ${quotedTables.join(', ')}`;
 
     if (this.joinConditions.length > 0) {
       const joinConditions = this.joinConditions.map((joinCondition) => {

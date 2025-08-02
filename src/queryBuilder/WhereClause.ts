@@ -9,7 +9,8 @@ export type ColumnReference = {
   column: string;
 };
 
-type ComparisonOperator = '=' | '!=' | '<>' | '>' | '<' | '>=' | '<=';
+type Raw = string;
+export type ComparisonOperator = '=' | '!=' | '<>' | '>' | '<' | '>=' | '<=';
 type LikeOperator = 'LIKE';
 type NullOperator = 'IS NULL' | 'IS NOT NULL';
 type InOperator = 'IN' | 'NOT IN';
@@ -18,20 +19,16 @@ type ValueComparison = [string, ComparisonOperator, SQLValue];
 type NullComparision = [string, NullOperator];
 type LikeComparison = [string, LikeOperator, string];
 type InComparision = [string, InOperator, string[]];
-type FunctionComparison = [
-  FunctionType<WhereClause>,
-  ComparisonOperator,
-  SQLValue
-];
 
 type SimpleCondition =
   | ValueComparison
   | NullComparision
   | LikeComparison
-  | InComparision;
+  | InComparision
+  | Raw;
 
 export type ReferenceCondition = [string, ComparisonOperator, ColumnReference];
-type SubqueryCondition = [SelectStatement, ComparisonOperator, SQLValue];
+export type SubqueryCondition = [SelectStatement, ComparisonOperator, SQLValue];
 type LogicalCondition = {
   readonly type: 'AND' | 'OR';
   readonly conditions: readonly InputCondition[];
@@ -95,6 +92,8 @@ export class WhereClause {
       const paramStr = this.paramContext.addParameter(value);
 
       return `(${subquery.sql()}) ${operator} ${paramStr}`;
+    } else if (this.isRaw(condition)) {
+      return condition;
     } else if (this.isLogicalCondition(condition)) {
       const parts = condition.conditions.map((c) => {
         return this.buildWhereStatement(c);
@@ -237,5 +236,9 @@ export class WhereClause {
       (condition.type === 'AND' || condition.type === 'OR') &&
       Array.isArray(condition.conditions)
     );
+  }
+
+  private isRaw(condition: InputCondition) {
+    return typeof condition === 'string';
   }
 }

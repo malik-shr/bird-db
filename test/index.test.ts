@@ -2,6 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import { QueryBuilder, ref } from '../src';
 import { Database } from 'bun:sqlite';
 import { MAX } from '../src/utils/sqlFunctions';
+import { raw } from '../src/queryBuilder/WhereHelpers';
 
 describe('should', () => {
   const db = new Database(':memory:');
@@ -54,7 +55,7 @@ describe('should', () => {
       .sql();
 
     const expected =
-      'SELECT (SELECT "id" FROM "users" WHERE "id" = $1) AS "subquery", MAX("id") AS "max_id" FROM "users" WHERE "id" = $2';
+      'SELECT (SELECT "id" FROM "users" WHERE "id" = $0) AS "subquery", MAX("id") AS "max_id" FROM "users" WHERE "id" = $1';
 
     expect(QueryWithsubquery).toBe(expected);
   });
@@ -69,7 +70,7 @@ describe('should', () => {
       .sql();
 
     const expected =
-      'SELECT "id", (SELECT "name" FROM "users" WHERE "id" = $1) AS "subquery" FROM "users" WHERE (SELECT "name" FROM "users") = $2 AND "age" > $3';
+      'SELECT "id", (SELECT "name" FROM "users" WHERE "id" = $0) AS "subquery" FROM "users" WHERE (SELECT "name" FROM "users") = $1 AND "age" > $2';
 
     expect(QueryWithsubquery).toBe(expected);
   });
@@ -103,6 +104,17 @@ describe('should', () => {
       .sql();
 
     const expected = `SELECT * FROM "users" WHERE "users"."id" IN ($0, $1, $2)`;
+
+    expect(notNullQuery).toBe(expected);
+  });
+  it('raw', () => {
+    const notNullQuery = bb
+      .select()
+      .from('users')
+      .where(raw('users.id = COUNT(users.name)'))
+      .sql();
+
+    const expected = `SELECT * FROM "users" WHERE users.id = COUNT(users.name)`;
 
     expect(notNullQuery).toBe(expected);
   });

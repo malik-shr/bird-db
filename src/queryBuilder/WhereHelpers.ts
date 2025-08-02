@@ -1,9 +1,9 @@
 import type {
   ColumnReference,
+  ComparisonOperator,
   InputCondition,
   ReferenceCondition,
 } from './WhereClause';
-import type { ComparisonOperator } from '../utils/types';
 
 type RefConditions = [string, ComparisonOperator, string];
 
@@ -24,6 +24,10 @@ export function ref(column: string): ColumnReference {
 
 export function whereRef(refConditions: RefConditions): ReferenceCondition {
   return [refConditions[0], refConditions[1], ref(refConditions[1])];
+}
+
+export function raw(rawCondition: string) {
+  return rawCondition;
 }
 
 export function c(...conditions: InputCondition[]) {
