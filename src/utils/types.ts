@@ -11,11 +11,9 @@ export type SQLOperator =
   | 'IN'
   | 'NOT IN'
   | 'BETWEEN'
-  | 'NOT BETWEEN'
-  | 'EXISTS'
-  | 'NOT EXISTS';
+  | 'NOT BETWEEN';
 
-export type SQLValue = string | number | boolean | null;
+export type SQLValue = string | number | bigint | boolean | null;
 
 export interface SQLParams {
   [key: string]: SQLValue;
@@ -45,13 +43,3 @@ export type OrderCondition = {
   column: string;
   direction: OrderDirection;
 };
-
-export type ComparisonOperator = '=' | '!=' | '<>' | '>' | '<' | '>=' | '<=';
-export type ListOperator = 'IN' | 'NOT IN';
-export type LikeOperator = 'LIKE' | 'NOT LIKE';
-export type NullOperator = 'IS NULL' | 'IS NOT NULL';
-export type SqlOperator =
-  | ComparisonOperator
-  | ListOperator
-  | LikeOperator
-  | NullOperator;

@@ -1,3 +1,4 @@
+import type { SelectStatement } from '../queryBuilder/SelectStatement';
 import { quoteColumn } from './utils';
 
 interface FunctionType<T> {
@@ -6,7 +7,7 @@ interface FunctionType<T> {
   as(alias: string): FunctionType<T>;
 }
 
-export type SelectField = string | FunctionType<SelectField>;
+export type SelectField = string | FunctionType<SelectField> | SelectStatement;
 
 function sqlFunction<T>(column: string, sqlFunction: string): FunctionType<T> {
   const baseSql = `${sqlFunction}(${quoteColumn(column)})`;

@@ -2,8 +2,8 @@ import type { JoinCondition, SQLBuildResult, SQLParams } from '../utils/types';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
-import { WhereClause, type InputCondition } from '../helpers/WhereClause';
-import { quoteColumn, quoteTable } from '../helpers/utils';
+import { WhereClause, type InputCondition } from './WhereClause';
+import { quoteColumn, quoteTable } from '../utils/utils';
 
 export class UpdateStatement extends QueryExecuter {
   private table: string;

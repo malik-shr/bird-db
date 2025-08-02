@@ -5,7 +5,7 @@ import { DeleteStatement } from './DeleteStatement';
 import { UpdateStatement } from './UpdateStatement';
 import type { SQLParams } from '../utils/types';
 import { RawStatement } from './RawStatement';
-import type { SelectField } from '../helpers/sqlFunctions';
+import type { SelectField } from '../utils/sqlFunctions';
 
 export class QueryBuilder {
   private db: Database;

@@ -1,4 +1,4 @@
-import { quoteColumn, quoteTable } from '../helpers/utils';
+import { quoteColumn, quoteTable } from '../utils/utils';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
 import type { SQLBuildResult, SQLParams } from '../utils/types';

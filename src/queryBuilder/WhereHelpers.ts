@@ -2,7 +2,7 @@ import type {
   ColumnReference,
   InputCondition,
   ReferenceCondition,
-} from './Where';
+} from './WhereClause';
 import type { ComparisonOperator } from '../utils/types';
 
 type RefConditions = [string, ComparisonOperator, string];
@@ -19,7 +19,7 @@ export function ref(column: string): ColumnReference {
   if (typeof column !== 'string' || column.trim() === '') {
     throw new Error('Column reference must be a non-empty string');
   }
-  return { type: 'COLUMN_REF', column } as const;
+  return { type: 'REF', column } as const;
 }
 
 export function whereRef(refConditions: RefConditions): ReferenceCondition {

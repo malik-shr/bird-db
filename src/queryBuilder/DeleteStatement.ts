@@ -1,9 +1,9 @@
 import type { SQLBuildResult, SQLParams } from '../utils/types';
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
-import { WhereClause, type InputCondition } from '../helpers/WhereClause';
+import { WhereClause, type InputCondition } from './WhereClause';
 import { ParameterContext } from '../utils/ParamContext';
-import { quoteTable } from '../helpers/utils';
+import { quoteTable } from '../utils/utils';
 
 export class DeleteStatement extends QueryExecuter {
   private fromTable: string;

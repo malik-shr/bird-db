@@ -4,26 +4,42 @@ import type {
   OrderDirection,
   SQLBuildResult,
 } from '../utils/types';
-import { WhereClause, type InputCondition } from '../helpers/WhereClause';
+
 import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
-import { quoteColumn, quoteTable } from '../helpers/utils';
-import type { SelectField } from '../helpers/sqlFunctions';
+import { quoteColumn, quoteTable } from '../utils/utils';
+import type { SelectField } from '../utils/sqlFunctions';
+import { WhereClause, type InputCondition } from './WhereClause';
 
 export class SelectStatement extends QueryExecuter {
-  private selectFields: SelectField[] = [];
+  selectFields: SelectField[] = [];
+  paramContext: ParameterContext;
+
   private fromTables: string[] = [];
   private whereClauses: WhereClause[] = [];
-  private paramContext: ParameterContext;
+
   private joinConditions: JoinCondition[] = [];
   private orderConditions: OrderCondition[] = [];
+  private alias: string | null = null;
 
-  constructor(selectFields: SelectField[], db: Database) {
+  constructor(
+    selectFields: SelectField[],
+    db: Database,
+    paramContext: ParameterContext = new ParameterContext()
+  ) {
     super(db);
+    this.paramContext = paramContext;
     this.selectFields = selectFields.map((selectField) => {
       if (typeof selectField === 'string') {
         return quoteColumn(selectField);
+      } else if (selectField instanceof SelectStatement) {
+        const newSelectField = new SelectStatement(
+          selectField.selectFields,
+          db,
+          this.paramContext
+        );
+        return newSelectField.sql();
       } else if (selectField.type !== null) {
         if (selectField.type === 'function') {
           return selectField.sql;
@@ -31,8 +47,6 @@ export class SelectStatement extends QueryExecuter {
       }
       throw Error('Invalid field format');
     });
-
-    this.paramContext = new ParameterContext();
   }
 
   from(...tables: string[]): this {
@@ -52,6 +66,12 @@ export class SelectStatement extends QueryExecuter {
     const whereClause = new WhereClause(conditions, this.paramContext);
     this.whereClauses.push(whereClause);
 
+    for (const condition of conditions) {
+      if (condition instanceof SelectStatement) {
+        //condition.build();
+        condition.params = this.params;
+      }
+    }
     return this;
   }
 
@@ -94,6 +114,12 @@ export class SelectStatement extends QueryExecuter {
     return this;
   }
 
+  as(alias: string) {
+    this.alias = alias;
+
+    return this;
+  }
+
   protected build(): SQLBuildResult {
     if (this.selectFields.length === 0) {
       throw new Error('SELECT fields are required');
@@ -131,6 +157,11 @@ export class SelectStatement extends QueryExecuter {
       sql += ` ORDER BY ${orderConditions.join(', ')}`;
     }
 
+    if (this.alias) {
+      sql = `(${sql}) AS "${this.alias}"`;
+    }
+
+    console.log(this.paramContext.getParameters());
     return { sql, params: this.paramContext.getParameters() };
   }
 }

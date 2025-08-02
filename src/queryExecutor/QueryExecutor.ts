@@ -8,14 +8,14 @@ type NoClass = { __hasClass: false; __type: any };
 export abstract class QueryExecuter<
   TState extends HasClass<any> | NoClass = NoClass
 > {
-  constructor(private db: Database) {}
-
   protected abstract build(): SQLBuildResult;
 
-  private asClass?: new (...args: any[]) => any;
+  private castClass?: new (...args: any[]) => any;
+
+  constructor(private db: Database) {}
 
   // Type-safe as() method that returns a new typed instance
-  as<U>(asClass: new (...args: any[]) => U): QueryExecuter<HasClass<U>> {
+  castTo<U>(asClass: new (...args: any[]) => U): QueryExecuter<HasClass<U>> {
     // Create a new instance with the same prototype and properties
     const newInstance = Object.create(
       Object.getPrototypeOf(this)
@@ -35,11 +35,11 @@ export abstract class QueryExecuter<
   get() {
     const { sql, params } = this.build();
 
-    if (!this.asClass) {
+    if (!this.castClass) {
       return this.db.query(sql).get(params);
     }
 
-    return this.db.query(sql).as(this.asClass).get(params);
+    return this.db.query(sql).as(this.castClass).get(params);
   }
 
   // Method overloads for all()
@@ -47,22 +47,22 @@ export abstract class QueryExecuter<
   all() {
     const { sql, params } = this.build();
 
-    if (!this.asClass) {
+    if (!this.castClass) {
       return this.db.query(sql).all(params);
     }
 
-    return this.db.query(sql).as(this.asClass).all(params);
+    return this.db.query(sql).as(this.castClass).all(params);
   }
 
   // run() doesn't need type safety as it returns execution results
   run() {
     const { sql, params } = this.build();
 
-    if (!this.asClass) {
+    if (!this.castClass) {
       return this.db.query(sql).run(params);
     }
 
-    return this.db.query(sql).as(this.asClass).run(params);
+    return this.db.query(sql).as(this.castClass).run(params);
   }
 
   sql(): string {
