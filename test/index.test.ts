@@ -54,7 +54,7 @@ describe('should', () => {
       .sql();
 
     const expected =
-      'SELECT (SELECT "id" FROM "users" WHERE "id" = $0) AS "subquery", MAX("id") AS "max_id" FROM "users" WHERE "id" = $1)';
+      'SELECT (SELECT "id" FROM "users" WHERE "id" = $1) AS "subquery", MAX("id") AS "max_id" FROM "users" WHERE "id" = $2';
 
     expect(QueryWithsubquery).toBe(expected);
   });
@@ -65,11 +65,11 @@ describe('should', () => {
         bb.select('name').from('users').where(['id', '=', '13']).as('subquery')
       )
       .from('users')
-      .where([bb.select('name').from('users'), '=', '$0'], ['age', '>', 18])
+      .where([bb.select('name').from('users'), '=', '0'], ['age', '>', 18])
       .sql();
 
     const expected =
-      'SELECT "id", (SELECT "name" FROM "users" WHERE "id" = $1) AS "subquery" FROM "users" WHERE (SELECT "name" FROM "users") = $1 AND "age" > $2';
+      'SELECT "id", (SELECT "name" FROM "users" WHERE "id" = $1) AS "subquery" FROM "users" WHERE (SELECT "name" FROM "users") = $2 AND "age" > $3';
 
     expect(QueryWithsubquery).toBe(expected);
   });

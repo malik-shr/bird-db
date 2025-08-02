@@ -9,8 +9,10 @@ import { Database } from 'bun:sqlite';
 import { QueryExecuter } from '../queryExecutor/QueryExecutor';
 import { ParameterContext } from '../utils/ParamContext';
 import { quoteColumn, quoteTable } from '../utils/utils';
-import type { SelectField } from '../utils/sqlFunctions';
+import type { FunctionType } from '../utils/sqlFunctions';
 import { WhereClause, type InputCondition } from './WhereClause';
+
+type SelectField = string | FunctionType<SelectStatement> | SelectStatement;
 
 export class SelectStatement extends QueryExecuter {
   selectFields: SelectField[] = [];
@@ -30,23 +32,7 @@ export class SelectStatement extends QueryExecuter {
   ) {
     super(db);
     this.paramContext = paramContext;
-    this.selectFields = selectFields.map((selectField) => {
-      if (typeof selectField === 'string') {
-        return quoteColumn(selectField);
-      } else if (selectField instanceof SelectStatement) {
-        const newSelectField = new SelectStatement(
-          selectField.selectFields,
-          db,
-          this.paramContext
-        );
-        return newSelectField.sql();
-      } else if (selectField.type !== null) {
-        if (selectField.type === 'function') {
-          return selectField.sql;
-        }
-      }
-      throw Error('Invalid field format');
-    });
+    this.selectFields = selectFields;
   }
 
   from(...tables: string[]): this {
@@ -114,6 +100,22 @@ export class SelectStatement extends QueryExecuter {
     return this;
   }
 
+  setParamContext(ctx: ParameterContext): void {
+    this.paramContext = ctx;
+
+    // Propagate to where clauses
+    for (const whereClause of this.whereClauses) {
+      whereClause.paramContext = this.paramContext;
+      whereClause.build();
+
+      for (const condition of whereClause.conditions) {
+        if (condition instanceof SelectStatement) {
+          condition.setParamContext(this.paramContext);
+        }
+      }
+    }
+  }
+
   as(alias: string) {
     this.alias = alias;
 
@@ -125,13 +127,27 @@ export class SelectStatement extends QueryExecuter {
       throw new Error('SELECT fields are required');
     }
 
+    const fieldsSql = this.selectFields.map((field) => {
+      if (typeof field === 'string') {
+        return quoteColumn(field);
+      } else if (field instanceof SelectStatement) {
+        field.setParamContext(this.paramContext);
+        const nested = field.build();
+        return `${nested.sql}`; // wrap subquery
+      } else if (typeof field === 'object' && field.type === 'function') {
+        return field.sql;
+      }
+
+      throw new Error('Invalid select field');
+    });
+
     if (this.fromTables.length === 0) {
       throw new Error('FROM table is required');
     }
 
-    let sql = `SELECT ${this.selectFields.join(
+    let sql = `SELECT ${fieldsSql.join(', ')} FROM ${this.fromTables.join(
       ', '
-    )} FROM ${this.fromTables.join(', ')}`;
+    )}`;
 
     if (this.joinConditions.length > 0) {
       const joinConditions = this.joinConditions.map((joinCondition) => {
@@ -161,7 +177,6 @@ export class SelectStatement extends QueryExecuter {
       sql = `(${sql}) AS "${this.alias}"`;
     }
 
-    console.log(this.paramContext.getParameters());
     return { sql, params: this.paramContext.getParameters() };
   }
 }

@@ -2,6 +2,7 @@ import { SelectStatement } from './SelectStatement';
 import { ParameterContext } from '../utils/ParamContext';
 import type { SQLBuildResult, SQLOperator, SQLValue } from '../utils/types';
 import { quoteColumn } from '../utils/utils';
+import type { FunctionType } from '../utils/sqlFunctions';
 
 export type ColumnReference = {
   type: 'REF';
@@ -17,6 +18,11 @@ type ValueComparison = [string, ComparisonOperator, SQLValue];
 type NullComparision = [string, NullOperator];
 type LikeComparison = [string, LikeOperator, string];
 type InComparision = [string, InOperator, string[]];
+type FunctionComparison = [
+  FunctionType<WhereClause>,
+  ComparisonOperator,
+  SQLValue
+];
 
 type SimpleCondition =
   | ValueComparison
@@ -38,8 +44,8 @@ export type InputCondition =
   | LogicalCondition;
 
 export class WhereClause {
-  private conditions: readonly InputCondition[];
-  private paramContext: ParameterContext;
+  conditions: readonly InputCondition[];
+  paramContext: ParameterContext;
 
   constructor(
     conditions: readonly InputCondition[],
@@ -86,7 +92,9 @@ export class WhereClause {
       )}`;
     } else if (this.isSubQueryCondition(condition)) {
       const [subquery, operator, value] = condition;
-      return `(${subquery.sql()}) ${operator} ${value}`;
+      const paramStr = this.paramContext.addParameter(value);
+
+      return `(${subquery.sql()}) ${operator} ${paramStr}`;
     } else if (this.isLogicalCondition(condition)) {
       const parts = condition.conditions.map((c) => {
         return this.buildWhereStatement(c);
@@ -94,7 +102,6 @@ export class WhereClause {
       return `(${parts.join(` ${condition.type} `)})`;
     }
 
-    console.log(condition);
     throw Error('Unsupported Where clause');
   }
 

@@ -1,13 +1,12 @@
 import type { SelectStatement } from '../queryBuilder/SelectStatement';
+import type { WhereClause } from '../queryBuilder/WhereClause';
 import { quoteColumn } from './utils';
 
-interface FunctionType<T> {
+export interface FunctionType<T> {
   type: 'function';
   sql: string;
   as(alias: string): FunctionType<T>;
 }
-
-export type SelectField = string | FunctionType<SelectField> | SelectStatement;
 
 function sqlFunction<T>(column: string, sqlFunction: string): FunctionType<T> {
   const baseSql = `${sqlFunction}(${quoteColumn(column)})`;
@@ -25,32 +24,32 @@ function sqlFunction<T>(column: string, sqlFunction: string): FunctionType<T> {
   };
 }
 
-export function COUNT(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'COUNT');
+export function COUNT(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement>(column, 'COUNT');
 }
 
-export function SUM(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'SUM');
+export function SUM(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement>(column, 'SUM');
 }
 
-export function MIN(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'MIN');
+export function MIN(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement>(column, 'MIN');
 }
 
-export function MAX(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'MAX');
+export function MAX(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement>(column, 'MAX');
 }
 
-export function AVG(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'AVG');
+export function AVG(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement>(column, 'AVG');
 }
 
-export function UPPER(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'UPPER');
+export function UPPER(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement | WhereClause>(column, 'UPPER');
 }
-export function LOWER(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'LOWER');
+export function LOWER(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement | WhereClause>(column, 'LOWER');
 }
-export function LENGTH(column: string): FunctionType<SelectField> {
-  return sqlFunction<SelectField>(column, 'LENGTH');
+export function LENGTH(column: string): FunctionType<SelectStatement> {
+  return sqlFunction<SelectStatement | WhereClause>(column, 'LENGTH');
 }
