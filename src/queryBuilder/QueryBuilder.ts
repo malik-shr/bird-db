@@ -1,11 +1,10 @@
 import { Database } from 'bun:sqlite';
-import { SelectStatement } from './SelectStatement';
+import { SelectStatement, type SelectField } from './SelectStatement';
 import { InsertStatement } from './InsertStatement';
 import { DeleteStatement } from './DeleteStatement';
 import { UpdateStatement } from './UpdateStatement';
 import type { SQLParams } from '../utils/types';
 import { RawStatement } from './RawStatement';
-import type { SelectField } from '../utils/sqlFunctions';
 
 export class QueryBuilder {
   private db: Database;

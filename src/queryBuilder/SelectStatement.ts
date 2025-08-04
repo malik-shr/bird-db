@@ -16,7 +16,7 @@ import {
   type SubqueryCondition,
 } from './WhereClause';
 
-type SelectField = string | FunctionType<SelectStatement> | SelectStatement;
+export type SelectField = string | FunctionType<SelectStatement> | SelectStatement;
 
 export class SelectStatement extends QueryExecuter {
   selectFields: SelectField[] = [];

@@ -1,9 +1,16 @@
 {
-  "name": "bird-sql",
+  "name": "bird-db",
   "version": "1.0.0",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }
