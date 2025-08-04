@@ -33,7 +33,7 @@ bun add github:malik-shr/bird-db
 
 ```ts
 import { Database } from 'bun:sqlite';
-import { QueryBuilder } from 'bird-sql';
+import { QueryBuilder } from 'bird-db';
 
 const db = new Database(':memory:');
 const qb = new QueryBuilder(db);
@@ -44,7 +44,23 @@ const qb = new QueryBuilder(db);
 
 ```ts
 
-import { COUNT, SUM, AVG, MIN, MAX, AVG, UPPER, LOWER, LENGTH, ref, WhereRef, raw, and, or } from 'bird-sql';
+import {
+  COUNT,
+  SUM,
+  AVG,
+  MIN,
+  MAX,
+  AVG,
+  UPPER,
+  LOWER,
+  LENGTH,
+  ref,
+  WhereRef,
+  raw,
+  and,
+  or
+} from 'bird-db';
+
 // Simple Select
 // * by default if kept empty
 bb.select("id", "username").from("users")
