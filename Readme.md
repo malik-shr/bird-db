@@ -2,7 +2,7 @@
 ---
 
 ````markdown
-# bird-sql
+# bird-db
 
 A simple and lightweight query builder for [Bun](https://bun.sh/) using native SQLite bindings.  
 PostgreSQL support is planned.
