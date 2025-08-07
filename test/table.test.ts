@@ -31,16 +31,16 @@ describe('Table', () => {
   });
 
   it('transactions', () => {
-    const transaction = bb.transaction(() => {
-      bb.insertInto('example')
-        .values({ id: '2', first_name: 'bird', last_name: 'db' })
-        .run();
-      bb.insertInto('example')
-        .values({ id: '3', first_name: 'bird', last_name: 'db' })
-        .run();
-    });
+const insertValues = bb.transaction(() => {
+    bb.insertInto('example')
+    .values({ id: '2', first_name: 'bird', last_name: 'db' })
+    .run();
+    bb.insertInto('example')
+    .values({ id: '3', first_name: 'bird', last_name: 'db' })
+    .run();
+});
 
-    transaction();
+insertValues();
 
     const selectQuery = bb
       .select(COUNT('*').as('count'))

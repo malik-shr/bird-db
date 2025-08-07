@@ -35,8 +35,7 @@ bun add github:malik-shr/bird-db
 import { Database } from 'bun:sqlite';
 import { QueryBuilder } from 'bird-db';
 
-const db = new Database(':memory:');
-const qb = new QueryBuilder(db);
+const qb = new QueryBuilder(':memory:');
 ```
 
 ## Supported Syntax
@@ -207,14 +206,40 @@ adultUsers.castTo(User).all()
 adultUsers.run()
 ```
 
-##
+## Transactions
+```ts
+// Either all statements get executed or none
+const insertValues = bb.transaction(() => {
+    bb.insertInto('example')
+    .values({ id: '2', first_name: 'bird', last_name: 'db' })
+    .run();
+    bb.insertInto('example')
+    .values({ id: '3', first_name: 'bird', last_name: 'db' })
+    .run();
+});
+
+insertValues();
+```
+
+## Create/ Drop Table
+```ts
+//CreateTable
+const createStatement = bb.createTable('example', {
+    id: 'VARCHAR(255) NOT NULL PRIMARY KEY UNIQUE',
+    first_name: 'VARCHAR(50) NOT NULL',
+    last_name: 'VARCHAR(50)',
+});
+createStatement.run();
+//Alternative (Check if table exists)
+createStatement.checkFirst().run();
+
+// Drop Table
+bb.dropTable('example').run();
+```
 
 ## Roadmap
 
-- [ ] Support for table methods
-- [ ] Support for transactions
+- [x] Support for table methods
+- [x] Support for transactions
 - [ ] PostgreSQL support
 - [ ] SQL Injection safety
-
----
-````
