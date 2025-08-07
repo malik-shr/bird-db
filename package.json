@@ -4,7 +4,8 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "dev": "bun run src/index.ts",
+    "perf": "bun run src/perf/perf.ts"
   },
   "private": true,
   "devDependencies": {

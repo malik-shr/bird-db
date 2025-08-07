@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'bun:test';
 import { QueryBuilder, ref } from '../src';
-import { Database } from 'bun:sqlite';
 import { MAX } from '../src/utils/sqlFunctions';
 import { raw } from '../src/queryBuilder/WhereHelpers';
 
-describe('should', () => {
-  const db = new Database(':memory:');
-  const bb = new QueryBuilder(db);
+describe('Row', () => {
+  const bb = new QueryBuilder(':memory:');
 
   it('Select', () => {
     const statement = bb

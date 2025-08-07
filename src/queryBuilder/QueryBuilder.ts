@@ -5,12 +5,18 @@ import { DeleteStatement } from './DeleteStatement';
 import { UpdateStatement } from './UpdateStatement';
 import type { SQLParams } from '../utils/types';
 import { RawStatement } from './RawStatement';
+import {
+  CreateTableStatement,
+  type CreateColumn,
+} from './CreateTableStatement';
+import { DropTableStatement } from './DropTableStatement';
 
 export class QueryBuilder {
-  private db: Database;
+  /** Instance of bun:sqlite database */
+  public db: Database;
 
-  constructor(db: Database) {
-    this.db = db;
+  constructor(path: string) {
+    this.db = new Database(path);
   }
 
   select(...columns: SelectField[]) {
@@ -32,5 +38,17 @@ export class QueryBuilder {
 
   raw(statement: string, params: SQLParams = {}) {
     return new RawStatement(statement, params, this.db);
+  }
+
+  createTable(table: string, columns: CreateColumn) {
+    return new CreateTableStatement(table, columns, this.db);
+  }
+
+  dropTable(table: string) {
+    return new DropTableStatement(table, this.db);
+  }
+
+  transaction(insideTransaction: (...args: any) => void) {
+    return this.db.transaction(insideTransaction);
   }
 }

@@ -1,9 +1,8 @@
-import { Database } from 'bun:sqlite';
 import { QueryBuilder } from '..';
 
 function builderPerf() {
   const start = performance.now();
-  const builder = new QueryBuilder(new Database(':memory:')); // or pass a mock
+  const builder = new QueryBuilder(':memory:'); // or pass a mock
 
   for (let i = 0; i < 1_000_000; i++) {
     const query = builder
@@ -20,18 +19,17 @@ function builderPerf() {
 
 function insertPerf() {
   const start = performance.now();
-  const db = new Database(':memory:');
-  const builder = new QueryBuilder(db);
+  const builder = new QueryBuilder(':memory:');
 
-  db.exec(`
-    CREATE TABLE users (
-      id TEXT PRIMARY KEY NOT NULL,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT NOT NULL
-    )
-  `);
+  builder
+    .createTable('users', {
+      id: 'TEXT PRIMARY KEY NOT NULL',
+      username: 'TEXT UNIQUE NOT NULL',
+      email: 'TEXT NOT NULL',
+    })
+    .run();
 
-  const insertMany = db.transaction((entries: any[]) => {
+  const insertMany = builder.transaction((entries: any[]) => {
     for (const user of entries) {
       builder.insertInto('users').values(user).run();
     }
